@@ -10,6 +10,12 @@ public class Player : MonoBehaviour
     [SerializeField] private LayerMask _groundLayer;
     [SerializeField] private Transform _feetPosition;
     [SerializeField] private float _checkRadius;
+    [SerializeField] private Transform attackPoint;
+    [SerializeField] private float attackRange = 1f;
+    [SerializeField] private LayerMask enemyLayer;
+    [SerializeField] private int baseDamage = 50;
+
+    private PlayerBuffSystem buffs;
     
     private float moveInput;
     private bool facingRight = true;
@@ -24,6 +30,7 @@ public class Player : MonoBehaviour
     {
         rb =  GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+        buffs = GetComponent<PlayerBuffSystem>();
     }
 
     private void OnEnable()
@@ -87,6 +94,11 @@ public class Player : MonoBehaviour
         {
             animator.SetBool("Jump", true);
         }
+        
+        if (Input.GetKeyDown(KeyCode.Mouse0))
+        {
+            Attack();
+        }
     }
     
 
@@ -96,5 +108,20 @@ public class Player : MonoBehaviour
         Vector3 theScale = transform.localScale;
         theScale.x *= -1;
         transform.localScale = theScale;
+    }
+    
+    private void Attack()
+    {
+        animator.SetTrigger("Attack");
+        Vector2 direction = facingRight ? Vector2.right : Vector2.left;
+        Vector2 attackCenter = (Vector2)transform.position + direction * attackRange * 0.5f;
+        float radius = attackRange;
+        Collider2D[] enemies = Physics2D.OverlapCircleAll(attackCenter, radius, enemyLayer);
+        int finalDamage = baseDamage + buffs.GetBonusDamage();
+        
+        foreach (var enemy in enemies)
+        {
+            enemy.GetComponent<HealthSystem>()?.TakeDamage(finalDamage);
+        }
     }
 }
